@@ -4,7 +4,7 @@
 **Versão:** 1.0
 **Data:** Abril de 2026
 **Status:** Em Revisão
-**Equipe de Desenvolvimento:** Malkon, Levy, Lauren
+**Equipe de Desenvolvimento:** Malkon Gabriel, Levy Lyan, Lauren Vitória
 
 ---
 
