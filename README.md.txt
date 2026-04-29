@@ -17,12 +17,10 @@ A funcionalidade de Inteligência Artificial é exclusiva para usuários do Plan
 
 ## Equipe de Desenvolvimento
 
-Este projeto foi desenvolvido com dedicação por:
+Este projeto vai ser desenvolvido desenvolvido por:
 
 * Malkon
 * Levy
 * Esther
 * Lauren
 
----
-© 2024 SmartCloset Team - Todos os direitos reservados.
