@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    container_name: smartcloset-api-js
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./src/data:/app/src/data
