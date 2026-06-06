@@ -9,16 +9,22 @@
     "start": "node src/server.js",
     "test": "node tests/health.test.js"
   },
-  "keywords": ["smartcloset", "node", "express", "backend"],
+  "keywords": [
+    "smartcloset",
+    "node",
+    "express",
+    "backend"
+  ],
   "author": "Equipe SmartCloset",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "mysql2": "^3.22.4",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
