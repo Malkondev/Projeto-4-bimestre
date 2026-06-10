@@ -27,7 +27,7 @@ export default function OutfitBuilderScreen() {
   const [items, setItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [lookName, setLookName] = useState("");
-  const [generatedImage, setGeneratedImage] = useState(null);
+  const [aiSuggestion, setAiSuggestion] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -76,7 +76,7 @@ export default function OutfitBuilderScreen() {
       }
 
       setIsGenerating(true);
-      setGeneratedImage(null);
+      setAiSuggestion("");
 
       const response = await fetch(`${API_URL}/outfits/generate`, {
         method: "POST",
@@ -95,20 +95,20 @@ export default function OutfitBuilderScreen() {
         console.log("Erro da IA:", data);
         showMessage(
           "Erro",
-          data.message || "Não foi possível gerar a montagem com IA."
+          data.message || "Não foi possível gerar a sugestão com IA."
         );
         return;
       }
 
-      if (!data.image) {
-        showMessage("Erro", "A IA não retornou uma imagem.");
+      if (!data.suggestion) {
+        showMessage("Erro", "A IA não retornou uma sugestão.");
         return;
       }
 
-      setGeneratedImage(data.image);
+      setAiSuggestion(data.suggestion);
     } catch (error) {
-      console.log("Erro ao gerar montagem com IA:", error);
-      showMessage("Erro", "Erro ao gerar montagem com IA. Veja o console.");
+      console.log("Erro ao gerar sugestão com IA:", error);
+      showMessage("Erro", "Erro ao gerar sugestão com IA. Veja o console.");
     } finally {
       setIsGenerating(false);
     }
@@ -116,8 +116,8 @@ export default function OutfitBuilderScreen() {
 
   async function handleSaveLook() {
     try {
-      if (!generatedImage) {
-        showMessage("Atenção", "Gere a montagem primeiro.");
+      if (!aiSuggestion) {
+        showMessage("Atenção", "Gere a sugestão primeiro.");
         return;
       }
 
@@ -136,8 +136,9 @@ export default function OutfitBuilderScreen() {
         body: JSON.stringify({
           user_id: 1,
           name: lookName,
-          description: "Montagem criada com IA no SmartCloset.",
-          generated_image_url: generatedImage,
+          description: "Montagem analisada com IA no SmartCloset.",
+          generated_image_url: null,
+          ai_suggestion: aiSuggestion,
           clothing_item_ids: selectedItems.map((item) => item.id),
           is_public: true,
         }),
@@ -155,7 +156,7 @@ export default function OutfitBuilderScreen() {
 
       setLookName("");
       setSelectedItems([]);
-      setGeneratedImage(null);
+      setAiSuggestion("");
     } catch (error) {
       console.log("Erro ao salvar montagem:", error);
       showMessage("Erro", "Não foi possível salvar a montagem.");
@@ -214,9 +215,7 @@ export default function OutfitBuilderScreen() {
                     {item.name}
                   </Text>
 
-                  <Text style={styles.selectedText}>
-                    {selected ? "✓" : ""}
-                  </Text>
+                  <Text style={styles.selectedText}>{selected ? "✓" : ""}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -229,19 +228,17 @@ export default function OutfitBuilderScreen() {
           disabled={isGenerating || isSaving}
         >
           <Text style={styles.buttonText}>
-            {isGenerating ? "Gerando com IA..." : "Gerar montagem com IA"}
+            {isGenerating ? "Gerando sugestão..." : "Gerar sugestão com IA"}
           </Text>
         </TouchableOpacity>
 
-        {generatedImage && (
+        {aiSuggestion ? (
           <View style={styles.previewBox}>
-            <Text style={styles.subtitle}>Prévia da montagem</Text>
+            <Text style={styles.subtitle}>Sugestão da IA</Text>
 
-            <Image
-              source={{ uri: generatedImage }}
-              style={styles.generatedImage}
-              resizeMode="contain"
-            />
+            <View style={styles.suggestionBox}>
+              <Text style={styles.suggestionText}>{aiSuggestion}</Text>
+            </View>
 
             <TouchableOpacity
               style={[styles.saveButton, isSaving && styles.buttonDisabled]}
@@ -253,11 +250,11 @@ export default function OutfitBuilderScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        )}
+        ) : null}
 
         <Text style={styles.info}>
-          A montagem é gerada pela IA usando as roupas selecionadas. Depois de
-          salvar, ela ficará visível na Home.
+          A IA analisa as roupas selecionadas e sugere onde usar, o que combina
+          e o que pode melhorar no look.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -359,11 +356,15 @@ const styles = StyleSheet.create({
   previewBox: {
     marginTop: 24,
   },
-  generatedImage: {
-    width: "100%",
-    height: 420,
+  suggestionBox: {
     backgroundColor: "#F1F1F1",
     borderRadius: 10,
+    padding: 14,
+  },
+  suggestionText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: "#111",
   },
   info: {
     marginTop: 14,

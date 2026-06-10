@@ -1,13 +1,14 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 
-export default function ClothingCard({ item, onPressWishlist }) {
+export default function ClothingCard({ item, onPressWishlist, onPressDelete }) {
   return (
     <View style={styles.card}>
-    <Image
-  source={{ uri: item.image }}
-  style={styles.image}
-/>
+      <Image
+        source={{ uri: item.image }}
+        style={styles.image}
+        resizeMode="contain"
+      />
 
       <View style={styles.footer}>
         <Text numberOfLines={1} style={styles.name}>
@@ -15,9 +16,11 @@ export default function ClothingCard({ item, onPressWishlist }) {
         </Text>
 
         <TouchableOpacity onPress={() => onPressWishlist?.(item)}>
-          <Text style={styles.heart}>
-            {item.isWishlist ? "♥" : "♡"}
-          </Text>
+          <Text style={styles.heart}>{item.isWishlist ? "♥" : "♡"}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => onPressDelete?.(item)}>
+          <Text style={styles.delete}>🗑️</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -52,5 +55,9 @@ const styles = StyleSheet.create({
   heart: {
     fontSize: 24,
     marginLeft: 8,
+  },
+  delete: {
+    fontSize: 18,
+    marginLeft: 10,
   },
 });

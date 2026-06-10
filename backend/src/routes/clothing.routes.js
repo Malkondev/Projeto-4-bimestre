@@ -105,4 +105,32 @@ router.patch("/:id/wishlist", async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [items] = await pool.query(
+      "SELECT * FROM clothing_items WHERE id = ?",
+      [id]
+    );
+
+    if (items.length === 0) {
+      return res.status(404).json({
+        message: "Peça não encontrada.",
+      });
+    }
+
+    await pool.query("DELETE FROM clothing_items WHERE id = ?", [id]);
+
+    res.json({
+      message: "Peça removida com sucesso.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao remover peça",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;

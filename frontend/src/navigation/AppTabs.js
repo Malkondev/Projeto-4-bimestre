@@ -23,7 +23,7 @@ export default function AppTabs() {
       <Tab.Screen name="Gallery" component={GalleryScreen} />
       <Tab.Screen name="Montagem" component={OutfitBuilderScreen} />
       <Tab.Screen name="Camera" component={CameraScreen} />
-      <Tab.Screen name="Wish list" component={WishlistScreen} />
+      <Tab.Screen name="Favoritos" component={WishlistScreen} />
       <Tab.Screen name="More" component={MoreScreen} />
     </Tab.Navigator>
   );

@@ -57,8 +57,7 @@ export default function WishlistScreen() {
       >
         <TextInput style={styles.search} placeholder="🔍  Buscar" />
 
-        <Text style={styles.title}>Lista de desejos ✨</Text>
-
+        <Text style={styles.title}>Favoritos ✨</Text>
         <View style={styles.grid}>
           {wishlistItems.map((item) => (
             <ClothingCard
