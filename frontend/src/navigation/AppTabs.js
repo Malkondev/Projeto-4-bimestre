@@ -6,6 +6,7 @@ import GalleryScreen from "../screens/GalleryScreen";
 import CameraScreen from "../screens/CameraScreen";
 import WishlistScreen from "../screens/WishlistScreen";
 import MoreScreen from "../screens/MoreScreen";
+import OutfitBuilderScreen from "../screens/OutfitBuilderScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -20,6 +21,7 @@ export default function AppTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Gallery" component={GalleryScreen} />
+      <Tab.Screen name="Montagem" component={OutfitBuilderScreen} />
       <Tab.Screen name="Camera" component={CameraScreen} />
       <Tab.Screen name="Wish list" component={WishlistScreen} />
       <Tab.Screen name="More" component={MoreScreen} />
