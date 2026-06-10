@@ -1,80 +1,163 @@
-const express = require('express');
-const { v4: uuid } = require('uuid');
-const { readDatabase, writeDatabase } = require('../services/database');
-const { authRequired } = require('../middlewares/auth');
+const express = require("express");
+const OpenAI = require("openai");
+const pool = require("../config/db");
 
 const router = express.Router();
-router.use(authRequired);
 
-router.post('/', (req, res) => {
-  const { name, clothingItemIds, description, favorite = false } = req.body;
-
-  if (!name || !Array.isArray(clothingItemIds) || clothingItemIds.length === 0) {
-    return res.status(400).json({ message: 'Nome e lista de peças são obrigatórios.' });
-  }
-
-  const db = readDatabase();
-  const userItemIds = db.clothingItems
-    .filter((item) => item.userId === req.user.id)
-    .map((item) => item.id);
-
-  const invalidItem = clothingItemIds.find((id) => !userItemIds.includes(id));
-  if (invalidItem) {
-    return res.status(400).json({ message: 'O look possui peça inexistente ou de outro usuário.' });
-  }
-
-  const outfit = {
-    id: uuid(),
-    userId: req.user.id,
-    name,
-    clothingItemIds,
-    description: description || null,
-    favorite: Boolean(favorite),
-    createdAt: new Date().toISOString()
-  };
-
-  db.outfits.push(outfit);
-  writeDatabase(db);
-  return res.status(201).json(outfit);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-router.get('/', (req, res) => {
-  const db = readDatabase();
-  const outfits = db.outfits.filter((item) => item.userId === req.user.id);
-  return res.json(outfits);
-});
+router.get("/", async (req, res) => {
+  try {
+    const [outfits] = await pool.query(
+      "SELECT * FROM outfits ORDER BY created_at DESC"
+    );
 
-router.get('/favorites', (req, res) => {
-  const db = readDatabase();
-  const outfits = db.outfits.filter((item) => item.userId === req.user.id && item.favorite);
-  return res.json(outfits);
-});
-
-router.put('/:id/favorite', (req, res) => {
-  const db = readDatabase();
-  const outfit = db.outfits.find((item) => item.id === req.params.id && item.userId === req.user.id);
-
-  if (!outfit) {
-    return res.status(404).json({ message: 'Look não encontrado.' });
+    res.json(outfits);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao buscar montagens",
+      error: error.message,
+    });
   }
-
-  outfit.favorite = !outfit.favorite;
-  outfit.updatedAt = new Date().toISOString();
-  writeDatabase(db);
-  return res.json(outfit);
 });
 
-router.delete('/:id', (req, res) => {
-  const db = readDatabase();
-  const before = db.outfits.length;
-  db.outfits = db.outfits.filter((entry) => !(entry.id === req.params.id && entry.userId === req.user.id));
+router.get("/public", async (req, res) => {
+  try {
+    const [outfits] = await pool.query(
+      "SELECT * FROM outfits WHERE is_public = TRUE ORDER BY created_at DESC"
+    );
 
-  if (db.outfits.length === before) {
-    return res.status(404).json({ message: 'Look não encontrado.' });
+    res.json(outfits);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao buscar montagens públicas",
+      error: error.message,
+    });
   }
+});
 
-  writeDatabase(db);
-  return res.status(204).send();
+router.post("/generate", async (req, res) => {
+  try {
+    const { clothing_item_ids = [], look_name = "Look SmartCloset" } = req.body;
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(400).json({
+        message: "OPENAI_API_KEY não configurada no arquivo .env.",
+      });
+    }
+
+    if (!Array.isArray(clothing_item_ids) || clothing_item_ids.length < 2) {
+      return res.status(400).json({
+        message: "Selecione pelo menos duas peças para gerar o look.",
+      });
+    }
+
+    const [items] = await pool.query(
+      `SELECT id, name, category, image_url
+       FROM clothing_items
+       WHERE id IN (?)`,
+      [clothing_item_ids]
+    );
+
+    if (items.length < 2) {
+      return res.status(400).json({
+        message: "Peças não encontradas.",
+      });
+    }
+
+    const clothesDescription = items
+      .map((item) => `- ${item.name}, categoria ${item.category}`)
+      .join("\n");
+
+    const prompt = `
+Crie uma imagem de moda mostrando um look completo montado com estas peças:
+
+${clothesDescription}
+
+A imagem deve parecer uma montagem de catálogo de moda, em fundo claro, elegante, organizada, com as roupas combinando entre si. Não coloque textos na imagem. Não mostre marcas. Não mostre rosto de pessoa famosa.
+`;
+
+    const result = await openai.images.generate({
+      model: "gpt-image-1",
+      prompt,
+      size: "1024x1024",
+    });
+
+    const imageBase64 = result.data?.[0]?.b64_json;
+
+    if (!imageBase64) {
+      return res.status(500).json({
+        message: "A IA não retornou imagem.",
+      });
+    }
+
+    res.json({
+      image: `data:image/png;base64,${imageBase64}`,
+      prompt,
+      items,
+      look_name,
+    });
+  } catch (error) {
+    console.error("Erro ao gerar montagem com IA:", error);
+
+    res.status(500).json({
+      message: "Erro ao gerar montagem com IA.",
+      error: error.message,
+    });
+  }
+});
+
+router.post("/", async (req, res) => {
+  try {
+    const {
+      user_id = 1,
+      name,
+      description = "",
+      generated_image_url,
+      clothing_item_ids = [],
+      is_public = true,
+    } = req.body;
+
+    if (!name || !generated_image_url) {
+      return res.status(400).json({
+        message: "Nome e imagem da montagem são obrigatórios.",
+      });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO outfits
+       (user_id, name, description, generated_image_url, is_public)
+       VALUES (?, ?, ?, ?, ?)`,
+      [user_id, name, description, generated_image_url, Boolean(is_public)]
+    );
+
+    const outfitId = result.insertId;
+
+    if (Array.isArray(clothing_item_ids) && clothing_item_ids.length > 0) {
+      for (const clothingItemId of clothing_item_ids) {
+        await pool.query(
+          `INSERT INTO outfit_items
+           (outfit_id, clothing_item_id)
+           VALUES (?, ?)`,
+          [outfitId, clothingItemId]
+        );
+      }
+    }
+
+    const [outfits] = await pool.query(
+      "SELECT * FROM outfits WHERE id = ?",
+      [outfitId]
+    );
+
+    res.status(201).json(outfits[0]);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erro ao salvar montagem",
+      error: error.message,
+    });
+  }
 });
 
 module.exports = router;

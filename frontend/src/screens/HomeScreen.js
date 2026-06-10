@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -7,18 +7,38 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
+  Image,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
-const outfits = [
-  { id: 1, title: "Inverno", emoji: "🧥" },
-  { id: 2, title: "Casual", emoji: "👗" },
-  { id: 3, title: "Noite", emoji: "👚" },
-];
+const API_URL = "http://localhost:3000/api";
 
 export default function HomeScreen({ navigation }) {
+  const [outfits, setOutfits] = useState([]);
+
+  async function loadOutfits() {
+    try {
+      const response = await fetch(`${API_URL}/outfits/public`);
+      const data = await response.json();
+      setOutfits(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.log("Erro ao carregar montagens:", error);
+      setOutfits([]);
+    }
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      loadOutfits();
+    }, [])
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         <TextInput style={styles.search} placeholder="🔍  Buscar" />
 
         <TouchableOpacity
@@ -29,18 +49,28 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Suas montagens</Text>
+          <Text style={styles.sectionTitle}>Montagens públicas</Text>
           <Text style={styles.arrow}>›</Text>
         </View>
 
-        {outfits.map((item) => (
-          <View key={item.id} style={styles.outfitBlock}>
-            <View style={styles.card}>
-              <Text style={styles.emoji}>{item.emoji}</Text>
+        {outfits.length === 0 && (
+          <Text style={styles.emptyText}>
+            Nenhuma montagem salva ainda.
+          </Text>
+        )}
+
+        <View style={styles.grid}>
+          {outfits.map((item) => (
+            <View key={item.id} style={styles.outfitBlock}>
+              <Image
+                source={{ uri: item.generated_image_url }}
+                style={styles.cardImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.label}>{item.name}</Text>
             </View>
-            <Text style={styles.label}>{item.title}</Text>
-          </View>
-        ))}
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -88,19 +118,24 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
   },
-  outfitBlock: {
+  emptyText: {
+    color: "#777",
     marginBottom: 18,
   },
-  card: {
-    width: 150,
-    height: 150,
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  outfitBlock: {
+    width: 180,
+    marginRight: 14,
+    marginBottom: 18,
+  },
+  cardImage: {
+    width: "100%",
+    height: 220,
     borderRadius: 8,
     backgroundColor: "#EDEDED",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emoji: {
-    fontSize: 76,
   },
   label: {
     marginTop: 6,

@@ -22,39 +22,46 @@ export default function CameraScreen({ navigation }) {
   const [category, setCategory] = useState("");
 
   async function takePhoto() {
-    try {
-      const permission = await requestCameraPermission();
+  try {
+    const permission = await requestCameraPermission();
 
-      if (!permission.granted) {
-        Alert.alert(
-          "Permissão necessária",
-          "Permita o uso da câmera para tirar fotos."
-        );
-        return;
-      }
-
-      const photo = await cameraRef.current?.takePictureAsync({
-        quality: 0.7,
-        base64: true,
-      });
-
-      if (!photo?.uri) {
-        return;
-      }
-
-      setPhotoUri(photo.uri);
-
-      if (photo.base64) {
-        setPhotoBase64(`data:image/jpeg;base64,${photo.base64}`);
-      } else {
-        setPhotoBase64(photo.uri);
-      }
-    } catch (error) {
-      Alert.alert("Erro", "Não foi possível tirar a foto.");
-      console.log(error);
+    if (!permission.granted) {
+      Alert.alert(
+        "Permissão necessária",
+        "Permita o uso da câmera para tirar fotos."
+      );
+      return;
     }
-  }
 
+    const photo = await cameraRef.current?.takePictureAsync({
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!photo?.uri) {
+      return;
+    }
+
+    setPhotoUri(photo.uri);
+
+    let finalImage = "";
+
+    if (photo.base64) {
+      if (photo.base64.startsWith("data:image")) {
+        finalImage = photo.base64;
+      } else {
+        finalImage = `data:image/jpeg;base64,${photo.base64}`;
+      }
+    } else {
+      finalImage = await convertUriToBase64(photo.uri);
+    }
+
+    setPhotoBase64(finalImage);
+  } catch (error) {
+    Alert.alert("Erro", "Não foi possível tirar a foto.");
+    console.log(error);
+  }
+}
   async function savePhoto() {
     try {
       if (!name || !category || !photoBase64) {
@@ -158,16 +165,15 @@ export default function CameraScreen({ navigation }) {
       </SafeAreaView>
     );
   }
+return (
+  <SafeAreaView style={styles.container}>
+    <CameraView ref={cameraRef} style={styles.camera} facing="back" />
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <CameraView ref={cameraRef} style={styles.camera} facing="back">
-        <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
-          <View style={styles.cameraButtonInner} />
-        </TouchableOpacity>
-      </CameraView>
-    </SafeAreaView>
-  );
+    <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
+      <View style={styles.cameraButtonInner} />
+    </TouchableOpacity>
+  </SafeAreaView>
+);
 }
 
 const styles = StyleSheet.create({
@@ -226,7 +232,6 @@ const styles = StyleSheet.create({
   previewLarge: {
     width: "100%",
     height: 280,
-    resizeMode: "contain",
     backgroundColor: "#F1F1F1",
     borderRadius: 10,
     marginBottom: 18,

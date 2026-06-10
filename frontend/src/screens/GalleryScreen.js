@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import ClothingCard from "../components/ClothingCard";
 
 const API_URL = "http://localhost:3000/api";
@@ -19,6 +20,7 @@ export default function GalleryScreen() {
       const response = await fetch(`${API_URL}/clothing`);
 
       if (!response.ok) {
+        console.log("Erro HTTP ao carregar galeria:", response.status);
         setItems([]);
         return;
       }
@@ -43,11 +45,13 @@ export default function GalleryScreen() {
     }
   }
 
-  useEffect(() => {
-    loadItems();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadItems();
+    }, [])
+  );
 
-  const categories = ["Blusas", "Calças", "Sapatos", "Acessórios", "Vestidos", "Outros"];
+  const categories = [...new Set(items.map((item) => item.category || "Outros"))];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -59,12 +63,16 @@ export default function GalleryScreen() {
 
         <Text style={styles.pageTitle}>Galeria</Text>
 
-        {categories.map((category) => {
-          const categoryItems = items.filter((item) => item.category === category);
+        {items.length === 0 && (
+          <Text style={styles.emptyText}>
+            Nenhuma peça cadastrada ainda.
+          </Text>
+        )}
 
-          if (categoryItems.length === 0) {
-            return null;
-          }
+        {categories.map((category) => {
+          const categoryItems = items.filter(
+            (item) => (item.category || "Outros") === category
+          );
 
           return (
             <View key={category} style={styles.category}>
@@ -113,6 +121,10 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 22,
     fontWeight: "800",
+    marginBottom: 18,
+  },
+  emptyText: {
+    color: "#777",
     marginBottom: 18,
   },
   category: {

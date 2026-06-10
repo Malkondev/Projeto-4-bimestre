@@ -4,7 +4,10 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 export default function ClothingCard({ item, onPressWishlist }) {
   return (
     <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.image} />
+    <Image
+  source={{ uri: item.image }}
+  style={styles.image}
+/>
 
       <View style={styles.footer}>
         <Text numberOfLines={1} style={styles.name}>
@@ -33,7 +36,6 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: 160,
-    resizeMode: "contain",
     backgroundColor: "#F2F2F2",
   },
   footer: {
