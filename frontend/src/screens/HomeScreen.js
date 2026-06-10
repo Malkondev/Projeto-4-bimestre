@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
+  TouchableOpacity,
 } from "react-native";
 
 const outfits = [
@@ -14,11 +15,18 @@ const outfits = [
   { id: 3, title: "Noite", emoji: "👚" },
 ];
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <TextInput style={styles.search} placeholder="🔍  Buscar" />
+
+        <TouchableOpacity
+          style={styles.mountButton}
+          onPress={() => navigation.navigate("Montagem")}
+        >
+          <Text style={styles.mountButtonText}>+ Criar montagem com IA</Text>
+        </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Suas montagens</Text>
@@ -52,7 +60,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#F1F1F1",
     paddingHorizontal: 12,
-    marginBottom: 28,
+    marginBottom: 16,
+  },
+  mountButton: {
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+  },
+  mountButtonText: {
+    color: "#FFF",
+    fontWeight: "800",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -60,7 +80,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "800",
   },
   arrow: {
@@ -85,6 +105,6 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 6,
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "700",
   },
 });
