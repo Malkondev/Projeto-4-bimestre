@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 
-export default function ClothingCard({ item, onPressFavorite }) {
+export default function ClothingCard({ item, onPressWishlist }) {
   return (
     <View style={styles.card}>
       <Image source={{ uri: item.image }} style={styles.image} />
@@ -11,8 +11,10 @@ export default function ClothingCard({ item, onPressFavorite }) {
           {item.name}
         </Text>
 
-        <TouchableOpacity onPress={() => onPressFavorite?.(item)}>
-          <Text style={styles.favorite}>{item.isFavorite ? "♥" : "♡"}</Text>
+        <TouchableOpacity onPress={() => onPressWishlist?.(item)}>
+          <Text style={styles.heart}>
+            {item.isWishlist ? "♥" : "♡"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -21,30 +23,32 @@ export default function ClothingCard({ item, onPressFavorite }) {
 
 const styles = StyleSheet.create({
   card: {
-    width: "47%",
+    width: 180,
     backgroundColor: "#EDEDED",
     borderRadius: 10,
     overflow: "hidden",
     marginBottom: 14,
+    marginRight: 14,
   },
   image: {
     width: "100%",
-    height: 125,
-    resizeMode: "cover",
-    backgroundColor: "#DDD",
+    height: 160,
+    resizeMode: "contain",
+    backgroundColor: "#F2F2F2",
   },
   footer: {
+    minHeight: 42,
     padding: 8,
     flexDirection: "row",
     alignItems: "center",
   },
   name: {
     flex: 1,
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
   },
-  favorite: {
-    fontSize: 20,
-    marginLeft: 6,
+  heart: {
+    fontSize: 24,
+    marginLeft: 8,
   },
 });
