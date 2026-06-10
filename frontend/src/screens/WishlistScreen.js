@@ -17,22 +17,29 @@ export default function WishlistScreen() {
   async function loadItems() {
     try {
       const response = await fetch(`${API_URL}/clothing`);
+
+      if (!response.ok) {
+        setItems([]);
+        return;
+      }
+
       const data = await response.json();
-      setItems(data);
+      setItems(Array.isArray(data) ? data : []);
     } catch (error) {
       console.log("Erro ao carregar lista de desejos:", error);
+      setItems([]);
     }
   }
 
-  async function toggleFavorite(selectedItem) {
+  async function toggleWishlist(selectedItem) {
     try {
-      await fetch(`${API_URL}/clothing/${selectedItem.id}/favorite`, {
+      await fetch(`${API_URL}/clothing/${selectedItem.id}/wishlist`, {
         method: "PATCH",
       });
 
       loadItems();
     } catch (error) {
-      console.log("Erro ao favoritar peça:", error);
+      console.log("Erro ao remover da lista de desejos:", error);
     }
   }
 
@@ -59,9 +66,9 @@ export default function WishlistScreen() {
               item={{
                 ...item,
                 image: item.image_url,
-                isFavorite: item.is_favorite,
+                isWishlist: Boolean(item.is_wishlist),
               }}
-              onPressFavorite={toggleFavorite}
+              onPressWishlist={toggleWishlist}
             />
           ))}
         </View>
@@ -87,13 +94,12 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   title: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "800",
     marginBottom: 16,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 14,
   },
 });
