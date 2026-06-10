@@ -7,14 +7,19 @@ import {
   SafeAreaView,
   Image,
   Alert,
-  Platform,
+  TextInput,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 
-export default function CameraScreen() {
+const API_URL = "http://localhost:3000/api";
+
+export default function CameraScreen({ navigation }) {
   const cameraRef = useRef(null);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [photoUri, setPhotoUri] = useState(null);
+  const [photoBase64, setPhotoBase64] = useState(null);
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
 
   async function takePhoto() {
     try {
@@ -29,7 +34,8 @@ export default function CameraScreen() {
       }
 
       const photo = await cameraRef.current?.takePictureAsync({
-        quality: 0.8,
+        quality: 0.7,
+        base64: true,
       });
 
       if (!photo?.uri) {
@@ -38,34 +44,62 @@ export default function CameraScreen() {
 
       setPhotoUri(photo.uri);
 
-      Alert.alert(
-        "Foto capturada",
-        "A foto foi tirada. Na versão web ela fica apenas como prévia."
-      );
+      if (photo.base64) {
+        setPhotoBase64(`data:image/jpeg;base64,${photo.base64}`);
+      } else {
+        setPhotoBase64(photo.uri);
+      }
     } catch (error) {
       Alert.alert("Erro", "Não foi possível tirar a foto.");
       console.log(error);
     }
   }
 
-  if (Platform.OS === "web") {
-    return (
-      <SafeAreaView style={styles.center}>
-        <Text style={styles.title}>Câmera</Text>
-        <Text style={styles.permissionText}>
-          A câmera com salvamento na galeria será testada pelo celular com Expo Go.
-        </Text>
-        <Text style={styles.permissionText}>
-          No navegador, use as telas Galeria e Lista de desejos para testar as fotos do banco.
-        </Text>
-      </SafeAreaView>
-    );
+  async function savePhoto() {
+    try {
+      if (!name || !category || !photoBase64) {
+        Alert.alert("Campos obrigatórios", "Informe nome e tipo da peça.");
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/clothing`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: 1,
+          name,
+          category,
+          image_url: photoBase64,
+          is_favorite: false,
+          is_wishlist: false,
+        }),
+      });
+
+      if (!response.ok) {
+        Alert.alert("Erro", "Não foi possível salvar a peça.");
+        return;
+      }
+
+      Alert.alert("Peça salva", "A foto foi enviada para a sua galeria.");
+
+      setName("");
+      setCategory("");
+      setPhotoUri(null);
+      setPhotoBase64(null);
+
+      navigation.navigate("Gallery");
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível cadastrar a peça.");
+      console.log(error);
+    }
   }
 
   if (!cameraPermission) {
     return (
       <SafeAreaView style={styles.center}>
-        <Text>Carregando permissões...</Text>
+        <Text>Carregando câmera...</Text>
       </SafeAreaView>
     );
   }
@@ -87,15 +121,47 @@ export default function CameraScreen() {
     );
   }
 
+  if (photoUri) {
+    return (
+      <SafeAreaView style={styles.formContainer}>
+        <Image source={{ uri: photoUri }} style={styles.previewLarge} />
+
+        <Text style={styles.title}>Cadastrar peça</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Nome da peça"
+          value={name}
+          onChangeText={setName}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Tipo: Blusas, Calças, Sapatos, Vestidos..."
+          value={category}
+          onChangeText={setCategory}
+        />
+
+        <TouchableOpacity style={styles.saveButton} onPress={savePhoto}>
+          <Text style={styles.saveButtonText}>Salvar na galeria</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => {
+            setPhotoUri(null);
+            setPhotoBase64(null);
+          }}
+        >
+          <Text style={styles.cancelButtonText}>Tirar outra foto</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <CameraView ref={cameraRef} style={styles.camera} facing="back">
-        <View style={styles.topBar}>
-          <Text style={styles.backText}>‹</Text>
-        </View>
-
-        {photoUri && <Image source={{ uri: photoUri }} style={styles.preview} />}
-
         <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
           <View style={styles.cameraButtonInner} />
         </TouchableOpacity>
@@ -111,21 +177,6 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
-  },
-  topBar: {
-    paddingTop: 20,
-    paddingLeft: 18,
-  },
-  backText: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 2,
-    borderColor: "#FFF",
-    color: "#FFF",
-    fontSize: 30,
-    lineHeight: 30,
-    textAlign: "center",
   },
   cameraButton: {
     position: "absolute",
@@ -145,16 +196,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "#272121",
   },
-  preview: {
-    position: "absolute",
-    right: 16,
-    bottom: 50,
-    width: 70,
-    height: 90,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#FFF",
-  },
   center: {
     flex: 1,
     padding: 24,
@@ -162,15 +203,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#FFF",
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 12,
-  },
   permissionText: {
     fontSize: 15,
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: 18,
   },
   permissionButton: {
     backgroundColor: "#000",
@@ -181,5 +217,52 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     color: "#FFF",
     fontWeight: "700",
+  },
+  formContainer: {
+    flex: 1,
+    backgroundColor: "#FFF",
+    padding: 18,
+  },
+  previewLarge: {
+    width: "100%",
+    height: 280,
+    resizeMode: "contain",
+    backgroundColor: "#F1F1F1",
+    borderRadius: 10,
+    marginBottom: 18,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    marginBottom: 14,
+  },
+  input: {
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: "#F1F1F1",
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  saveButton: {
+    height: 46,
+    borderRadius: 8,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
+  },
+  saveButtonText: {
+    color: "#FFF",
+    fontWeight: "800",
+  },
+  cancelButton: {
+    height: 46,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    fontWeight: "800",
   },
 });
